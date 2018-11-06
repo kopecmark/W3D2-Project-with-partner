@@ -159,6 +159,23 @@ class Replies
 
 end
 
+
+class QuestionFollow
+  def self.followers_for_question_id(question_id)
+    users = QuestionsDatabase.instance.execute(<<-SQL, question_id)
+      SELECT users.* FROM users
+      JOIN question_follows
+        ON users.id = question_follows.users
+      WHERE question_follows.questions = ?
+    SQL
+
+    result = []
+    users.each { |el| result << Users.new(el) }
+    result
+  end
+end
+
+
 # p Questions.find_by_author_id(2)
 # p Replies.find_by_user_id(1)
 # p Replies.find_by_question_id(4)
@@ -166,5 +183,7 @@ end
 # user = Users.find_by_id(1)
 # # p user.authored_questions
 # p user.authored_replies
-q = Replies.find_by_question_id(4).first
-p q.child_replies
+# q = Replies.find_by_question_id(4).first
+# p q.child_replies
+
+p QuestionFollow.followers_for_question_id(2)
