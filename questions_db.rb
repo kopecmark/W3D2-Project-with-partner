@@ -65,6 +65,16 @@ class Questions
     result
   end
 
+  def self.find_by_question_id(question_id)
+    question = QuestionsDatabase.instance.execute(<<-SQL, question_id)
+      SELECT * FROM questions
+      WHERE questions.id = ?
+    SQL
+
+    return nil if question.length < 1
+    Questions.new(question.first)
+  end
+
   def initialize(options)
     @id = options['id']
     @title = options['title']
@@ -72,8 +82,16 @@ class Questions
     @author = options['author']
   end
 
+  def author
+    Users.find_by_id(@author)
+  end
 
+  def replies
+    Replies.find_by_question_id(@id)
+  end
 end
+
+
 class Replies
   def self.find_by_user_id(user_id)
     user = QuestionsDatabase.instance.execute(<<-SQL, user_id)
@@ -89,14 +107,24 @@ class Replies
 
   def self.find_by_question_id(question_id)
     reply = QuestionsDatabase.instance.execute(<<-SQL, question_id)
-    SELECT * FROM replies
-    WHERE question_ref = ?
-    SQL
+      SELECT * FROM replies
+      WHERE question_ref = ?
+      SQL
     return nil if reply.length < 1
 
     result = []
     reply.each { |el| result << Replies.new(el) }
     result
+  end
+
+  def self.find_by_id(reply_id)
+    reply = QuestionsDatabase.instance.execute(<<-SQL, reply_id)
+      SELECT * FROM replies
+      WHERE id = ?
+    SQL
+
+    return nil if reply.length < 1
+    Replies.new(reply.first)
   end
 
   def initialize(options)
@@ -107,12 +135,36 @@ class Replies
     @body = options['body']
   end
 
+  def author
+    Users.find_by_id(@user_id)
+  end
+
+  def question
+    Questions.find_by_question_id(@question_ref)
+  end
+
+  def parent_reply
+    Replies.find_by_id(@parent_reply)
+  end
+
+  def child_replies
+    reply = QuestionsDatabase.instance.execute(<<-SQL, @id)
+      SELECT * FROM replies
+      WHERE parent_reply = ?
+    SQL
+
+    return nil if reply.length < 1
+    Replies.new(reply.first)
+  end
+
 end
 
 # p Questions.find_by_author_id(2)
 # p Replies.find_by_user_id(1)
 # p Replies.find_by_question_id(4)
 
-user = Users.find_by_id(1)
-# p user.authored_questions
-p user.authored_replies
+# user = Users.find_by_id(1)
+# # p user.authored_questions
+# p user.authored_replies
+q = Replies.find_by_question_id(4).first
+p q.child_replies
