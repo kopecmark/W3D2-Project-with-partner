@@ -48,6 +48,9 @@ class Users
     Replies.find_by_user_id(@id)
   end
 
+  def followed_questions
+    QuestionFollow.followed_questions_for_user_id(@id)
+  end
 end
 
 
@@ -88,6 +91,10 @@ class Questions
 
   def replies
     Replies.find_by_question_id(@id)
+  end
+
+  def followers
+    QuestionFollow.followers_for_question_id(@id)
   end
 end
 
@@ -171,6 +178,19 @@ class QuestionFollow
 
     result = []
     users.each { |el| result << Users.new(el) }
+    result
+  end
+
+  def self.followed_questions_for_user_id(user_id)
+    questions = QuestionsDatabase.instance.execute(<<-SQL, user_id)
+      SELECT questions.* FROM questions
+      JOIN question_follows
+        ON questions.id = question_follows.questions
+      WHERE question_follows.users = ?
+    SQL
+
+    result = []
+    questions.each { |el| result << Questions.new(el) }
     result
   end
 end
