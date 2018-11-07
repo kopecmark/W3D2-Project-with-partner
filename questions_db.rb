@@ -193,6 +193,21 @@ class QuestionFollow
     questions.each { |el| result << Questions.new(el) }
     result
   end
+
+  def self.most_followed_questions(limit)
+    questions = QuestionsDatabase.instance.execute(<<-SQL, limit)
+    SELECT *
+    FROM questions
+    WHERE questions.id IN (
+    SELECT questions
+    FROM question_follows
+    GROUP BY questions
+    ORDER BY COUNT(*) DESC
+    LIMIT ?
+  )
+    SQL
+    p questions
+  end
 end
 
 
@@ -206,4 +221,4 @@ end
 # q = Replies.find_by_question_id(4).first
 # p q.child_replies
 
-p QuestionFollow.followers_for_question_id(2)
+QuestionFollow.most_followed_questions(1)
